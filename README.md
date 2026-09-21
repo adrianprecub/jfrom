@@ -130,6 +130,24 @@ These cost real debugging time and are baked into the code and tests:
 - **Fields like `monitorClass`, `objectClass`, `eventThread` and `path` are unbounded.**
   Labelling by them without a cardinality cap will grow the registry without limit.
 
+## Editing the dashboard
+
+The dashboard lives at `docker/grafana/dashboards/jvm-jfr.json`. After editing it:
+
+```bash
+docker compose -f docker/docker-compose.yml restart grafana
+```
+
+Grafana 13 serves dashboards from its unified storage and does not reliably re-read a
+changed file on the provisioner's poll interval, so a restart is the dependable way to
+apply an edit. Two things to keep in mind when hand-editing:
+
+- **Do not add a top-level `"version"` field.** Grafana owns dashboard versioning, and a
+  pinned version silently blocks provisioning updates.
+- **Every target in a panel needs a unique `refId`** (`A`, `B`, `C`, ...). Duplicates make
+  the whole panel error out rather than degrade, and the queries themselves will still look
+  perfectly fine when run directly against the datasource.
+
 ## Development
 
 ```bash

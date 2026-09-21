@@ -1,5 +1,4 @@
 {
-  "id": null,
   "uid": "jvm-jfr",
   "title": "JVM via JFR",
   "description": "Live JVM internals streamed from Java Flight Recorder via jfr2grafana-agent. One row per metric family; see panel descriptions for known platform caveats (macOS/aarch64 CPU ratios, sampled allocation estimate, contention-threshold gaps).",
@@ -12,7 +11,6 @@
   "editable": true,
   "graphTooltip": 1,
   "schemaVersion": 39,
-  "version": 1,
   "refresh": "5s",
   "time": {
     "from": "now-5m",
@@ -276,7 +274,7 @@
             "uid": "vmetrics"
           },
           "expr": "jfr_heap_committed_bytes",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "committed"
         }
       ],
@@ -344,7 +342,7 @@
             "uid": "vmetrics"
           },
           "expr": "jfr_metaspace_committed_bytes",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "metaspace committed"
         },
         {
@@ -353,7 +351,7 @@
             "uid": "vmetrics"
           },
           "expr": "jfr_metaspace_class_used_bytes",
-          "refId": "A",
+          "refId": "C",
           "legendFormat": "class-space used"
         },
         {
@@ -362,7 +360,7 @@
             "uid": "vmetrics"
           },
           "expr": "jfr_metaspace_class_committed_bytes",
-          "refId": "A",
+          "refId": "D",
           "legendFormat": "class-space committed"
         }
       ],
@@ -488,7 +486,7 @@
             "uid": "vmetrics"
           },
           "expr": "histogram_quantile(0.99, sum(rate(jfr_gc_pause_seconds_bucket[$__rate_interval])) by (le))",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "p99"
         }
       ],
@@ -862,7 +860,7 @@
             "uid": "vmetrics"
           },
           "expr": "jfr_cpu_jvm_user_ratio",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "jvm user"
         },
         {
@@ -871,7 +869,7 @@
             "uid": "vmetrics"
           },
           "expr": "jfr_cpu_jvm_system_ratio",
-          "refId": "A",
+          "refId": "C",
           "legendFormat": "jvm system"
         }
       ],
@@ -939,7 +937,7 @@
             "uid": "vmetrics"
           },
           "expr": "jfr_threads_daemon",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "daemon"
         },
         {
@@ -948,7 +946,7 @@
             "uid": "vmetrics"
           },
           "expr": "jfr_threads_peak",
-          "refId": "A",
+          "refId": "C",
           "legendFormat": "peak"
         }
       ],
@@ -1074,7 +1072,7 @@
             "uid": "vmetrics"
           },
           "expr": "topk(10, jfr_thread_cpu_system_ratio)",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "{{thread}} system"
         }
       ],
@@ -1155,7 +1153,7 @@
             "uid": "vmetrics"
           },
           "expr": "histogram_quantile(0.99, sum(rate(jfr_monitor_blocked_seconds_bucket[$__rate_interval])) by (le))",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "p99"
         }
       ],
@@ -1767,7 +1765,7 @@
             "uid": "vmetrics"
           },
           "expr": "jfr_classes_unloaded_total",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "unloaded (cumulative)"
         }
       ],
@@ -1892,7 +1890,7 @@
             "uid": "vmetrics"
           },
           "expr": "rate(jfr_jit_compiler_standard_bytes_compiled_total[$__rate_interval])",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "standard bytes/sec"
         },
         {
@@ -1901,7 +1899,7 @@
             "uid": "vmetrics"
           },
           "expr": "rate(jfr_jit_compiler_osr_bytes_compiled_total[$__rate_interval])",
-          "refId": "A",
+          "refId": "C",
           "legendFormat": "OSR bytes/sec"
         }
       ],
@@ -1969,7 +1967,7 @@
             "uid": "vmetrics"
           },
           "expr": "rate(jfr_socket_write_bytes_total[$__rate_interval])",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "write Bps"
         }
       ],
@@ -2036,7 +2034,7 @@
             "uid": "vmetrics"
           },
           "expr": "rate(jfr_file_write_bytes_total[$__rate_interval])",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "write Bps"
         }
       ],
@@ -2103,7 +2101,7 @@
             "uid": "vmetrics"
           },
           "expr": "histogram_quantile(0.99, sum(rate(jfr_socket_write_seconds_bucket[$__rate_interval])) by (le))",
-          "refId": "A",
+          "refId": "B",
           "legendFormat": "socket write p99"
         },
         {
@@ -2112,7 +2110,7 @@
             "uid": "vmetrics"
           },
           "expr": "histogram_quantile(0.99, sum(rate(jfr_file_read_seconds_bucket[$__rate_interval])) by (le))",
-          "refId": "A",
+          "refId": "C",
           "legendFormat": "file read p99"
         },
         {
@@ -2121,7 +2119,7 @@
             "uid": "vmetrics"
           },
           "expr": "histogram_quantile(0.99, sum(rate(jfr_file_write_seconds_bucket[$__rate_interval])) by (le))",
-          "refId": "A",
+          "refId": "D",
           "legendFormat": "file write p99"
         }
       ],

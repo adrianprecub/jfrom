@@ -1,7 +1,15 @@
-# File-based dashboard provider. Points at the directory bind-mounted from
-# docker/grafana/dashboards/ (empty for now - Wave 4 drops jvm-jfr.json
-# there). updateIntervalSeconds is short so a dashboard added later, or
-# edited live, is picked up without restarting Grafana.
+# File-based dashboard provider, reading the directory bind-mounted from
+# docker/grafana/dashboards/.
+#
+# updateIntervalSeconds is set short, but do not rely on it: Grafana 13 serves
+# dashboards from its unified storage and does NOT reliably re-read a changed
+# file on this interval. After editing a dashboard JSON, run
+#   docker compose -f docker/docker-compose.yml restart grafana
+# which re-provisions from disk. Verified: a file edit alone left the old
+# dashboard served indefinitely; a restart applied it immediately.
+#
+# Also note the dashboard JSON must NOT pin a top-level "version" field.
+# Grafana owns dashboard versioning, and a pinned version blocks the update.
 apiVersion: 1
 
 providers:

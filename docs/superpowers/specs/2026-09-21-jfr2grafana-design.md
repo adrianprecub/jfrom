@@ -378,3 +378,25 @@ Recorded during implementation of the skeleton; these amend the plan above.
     ~19,900 drops in a few minutes under churn. The guard is doing its job, but the allocation
     panel shows the top classes plus an `__other__` bucket rather than a complete breakdown.
     Worth knowing before reading that panel as exhaustive.
+
+## Addendum — dashboard defects found after Wave 4
+
+20. **Duplicate `refId` broke 12 of 38 panels.** Every target in the generated dashboard was
+    given `refId: "A"`. Grafana requires refIds to be unique within a panel; duplicates make
+    the panel error out entirely rather than render partially. The symptom was diagnostic:
+    every single-target panel worked and every multi-target panel failed.
+    This passed the authoring task's own verification because that verification queried
+    VictoriaMetrics directly, where the PromQL is valid and returns data. The defect only
+    exists in Grafana's panel layer. **The right check is Grafana's `/api/ds/query` with the
+    panel's real targets**, which exercises the same path a panel does. After the fix: 32
+    panels return data, 0 error, 1 legitimately empty (`Events dropped/sec`, since nothing
+    has been dropped).
+
+21. **Grafana 13 does not reliably hot-reload a changed provisioned dashboard file**, despite
+    `updateIntervalSeconds: 5`. The updated file was confirmed present inside the container
+    while the API kept serving the old dashboard. `docker compose restart grafana`
+    re-provisions from disk and applies it.
+
+22. **A provisioned dashboard JSON must not pin a top-level `version` field.** Grafana owns
+    dashboard versioning and a pinned version blocks provisioning updates. Removed, along
+    with the unused `id`.
