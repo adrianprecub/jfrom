@@ -47,6 +47,10 @@ services:
       GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
       GF_SECURITY_ALLOW_EMBEDDING: "true"
+      # Land on the JFR dashboard with no clicks, declaratively. Setting this through
+      # Grafana's API instead would live only in the grafana-data volume, so a fresh
+      # `up.sh` on a clean machine would open the default home dashboard instead.
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/jvm-jfr.json
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro

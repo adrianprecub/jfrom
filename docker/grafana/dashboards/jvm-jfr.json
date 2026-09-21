@@ -1,0 +1,2168 @@
+{
+  "id": null,
+  "uid": "jvm-jfr",
+  "title": "JVM via JFR",
+  "description": "Live JVM internals streamed from Java Flight Recorder via jfr2grafana-agent. One row per metric family; see panel descriptions for known platform caveats (macOS/aarch64 CPU ratios, sampled allocation estimate, contention-threshold gaps).",
+  "tags": [
+    "jfr2grafana",
+    "jvm",
+    "jfr"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m"
+    ]
+  },
+  "panels": [
+    {
+      "id": 2,
+      "title": "Agent Health",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 3,
+      "title": "Events processed/sec",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr2grafana_events_processed_total[$__rate_interval]))",
+          "refId": "A",
+          "legendFormat": "events/sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Rate of jfr2grafana_events_processed_total across all event types. Flat non-zero confirms the agent is alive and the RecordingStream is flowing."
+    },
+    {
+      "id": 4,
+      "title": "Scrape duration",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr2grafana_scrape_duration_seconds",
+          "refId": "A",
+          "legendFormat": "scrape duration"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Wall-clock time the agent's own /metrics scrape took to render."
+    },
+    {
+      "id": 5,
+      "title": "Events dropped/sec",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr2grafana_events_dropped_total[$__rate_interval]))",
+          "refId": "A",
+          "legendFormat": "events dropped/sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "jdk event callbacks the engine discarded (e.g. filtered by threshold/period). 0 is expected most of the time."
+    },
+    {
+      "id": 6,
+      "title": "Cardinality drops/sec",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr2grafana_cardinality_dropped_total[$__rate_interval]))",
+          "refId": "A",
+          "legendFormat": "cardinality drops/sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Label combinations collapsed into __other__ after a metric's maxCardinality cap was exceeded (e.g. per-thread CPU, per-class allocation/lock labels). 0 is expected in a light POC workload."
+    },
+    {
+      "id": 7,
+      "title": "Memory & GC",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "id": 8,
+      "title": "Heap occupancy",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_heap_used_bytes",
+          "refId": "A",
+          "legendFormat": "used"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_heap_committed_bytes",
+          "refId": "A",
+          "legendFormat": "committed"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "Sampled after each GC (jdk.GCHeapSummary, when=\"After GC\")."
+    },
+    {
+      "id": 9,
+      "title": "Metaspace occupancy",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_metaspace_used_bytes",
+          "refId": "A",
+          "legendFormat": "metaspace used"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_metaspace_committed_bytes",
+          "refId": "A",
+          "legendFormat": "metaspace committed"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_metaspace_class_used_bytes",
+          "refId": "A",
+          "legendFormat": "class-space used"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_metaspace_class_committed_bytes",
+          "refId": "A",
+          "legendFormat": "class-space committed"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "Sampled after each GC (jdk.MetaspaceSummary, when=\"After GC\")."
+    },
+    {
+      "id": 10,
+      "title": "GC cycles/sec by collector & cause",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 14
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr_gc_count_total[$__rate_interval])) by (gc, cause)",
+          "refId": "A",
+          "legendFormat": "{{gc}} / {{cause}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "GC pause duration (p50 / p99)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 14
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.50, sum(rate(jfr_gc_pause_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "p50"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_gc_pause_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "GC pause duration heatmap",
+      "type": "heatmap",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 14
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr_gc_pause_seconds_bucket[$__rate_interval])) by (le)",
+          "refId": "A",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "calculate": false,
+        "yAxis": {
+          "unit": "s",
+          "axisPlacement": "left"
+        },
+        "color": {
+          "mode": "scheme",
+          "scheme": "Spectral",
+          "steps": 64,
+          "reverse": false
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "legend": {
+          "show": true
+        },
+        "tooltip": {
+          "show": true,
+          "yHistogram": false
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Longest sub-pause per GC cycle",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 22
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_gc_longest_pause_seconds",
+          "refId": "A",
+          "legendFormat": "{{gc}} / {{cause}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Fraction of time paused for GC",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 22
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr_gc_sum_of_pauses_seconds_total[$__rate_interval]))",
+          "refId": "A",
+          "legendFormat": "GC-paused fraction"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "rate() of cumulative GC-pause seconds: seconds paused per wall-clock second."
+    },
+    {
+      "id": 15,
+      "title": "GC phase pause duration (p99 by phase)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 22
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_gc_phase_pause_seconds_bucket[$__rate_interval])) by (le, phase))",
+          "refId": "A",
+          "legendFormat": "{{phase}} p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "Allocation rate by class (ESTIMATE \u2014 sampled event)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr_allocation_bytes_total[$__rate_interval])) by (object_class)",
+          "refId": "A",
+          "legendFormat": "{{object_class}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "jfr_allocation_bytes_total is derived from jdk.ObjectAllocationSample's sampled `weight` field, not an exact per-allocation byte count. Treat this as a statistically reasonable estimate of allocation pressure, not a precise measurement."
+    },
+    {
+      "id": 17,
+      "title": "CPU & Threads",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "panels": []
+    },
+    {
+      "id": 18,
+      "title": "CPU utilization (lead with machine total)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 39
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_cpu_machine_total_ratio",
+          "refId": "A",
+          "legendFormat": "machine total"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_cpu_jvm_user_ratio",
+          "refId": "A",
+          "legendFormat": "jvm user"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_cpu_jvm_system_ratio",
+          "refId": "A",
+          "legendFormat": "jvm system"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "jfr_cpu_jvm_user_ratio / jfr_cpu_jvm_system_ratio read a flat 0.0 on macOS/aarch64 hosts (JDK/OS quirk, not a bug) \u2014 jfr_cpu_machine_total_ratio populates on every platform and is the series to trust for \"is this JVM using CPU\". Inside the Linux docker-compose container the JVM-specific series are expected to populate normally."
+    },
+    {
+      "id": 19,
+      "title": "Live thread counts",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 39
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_threads_active",
+          "refId": "A",
+          "legendFormat": "active"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_threads_daemon",
+          "refId": "A",
+          "legendFormat": "daemon"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_threads_peak",
+          "refId": "A",
+          "legendFormat": "peak"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 20,
+      "title": "Thread creation rate",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 47
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "rate(jfr_thread_accumulated_total[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "threads started/sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "rate() of the JVM's cumulative jdk.JavaThreadStatistics.accumulatedCount (mapped as counter_absolute)."
+    },
+    {
+      "id": 21,
+      "title": "Per-thread CPU (top 10, capped at 20 distinct threads)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 47
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "topk(10, jfr_thread_cpu_user_ratio)",
+          "refId": "A",
+          "legendFormat": "{{thread}} user"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "topk(10, jfr_thread_cpu_system_ratio)",
+          "refId": "A",
+          "legendFormat": "{{thread}} system"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "jdk.ThreadCPULoad is capped at maxCardinality=20; thread names beyond the cap collapse into thread=\"__other__\"."
+    },
+    {
+      "id": 22,
+      "title": "Locks & Safepoints",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 55
+      },
+      "panels": []
+    },
+    {
+      "id": 23,
+      "title": "Monitor blocked time (p50 / p99)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 56
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.50, sum(rate(jfr_monitor_blocked_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "p50"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_monitor_blocked_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "Only synchronized-monitor acquisitions blocked \u22651ms are recorded. No data is expected while the app is idle or under /load/contend hasn't been driven \u2014 that is correct behaviour, not a broken panel."
+    },
+    {
+      "id": 24,
+      "title": "Monitor blocked time heatmap",
+      "type": "heatmap",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 56
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr_monitor_blocked_seconds_bucket[$__rate_interval])) by (le)",
+          "refId": "A",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "calculate": false,
+        "yAxis": {
+          "unit": "s",
+          "axisPlacement": "left"
+        },
+        "color": {
+          "mode": "scheme",
+          "scheme": "Spectral",
+          "steps": 64,
+          "reverse": false
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "legend": {
+          "show": true
+        },
+        "tooltip": {
+          "show": true,
+          "yHistogram": false
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        }
+      },
+      "description": "Populates once contention above the 1ms threshold occurs \u2014 drive /load/contend on the sample app to see it fill in."
+    },
+    {
+      "id": 25,
+      "title": "Monitor wait time (p99, by timeout)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 56
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_monitor_wait_seconds_bucket[$__rate_interval])) by (le, timed_out)) ",
+          "refId": "A",
+          "legendFormat": "timed_out={{timed_out}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "Object.wait() calls lasting \u22651ms. No data when the workload never waits \u2014 expected."
+    },
+    {
+      "id": 26,
+      "title": "Thread park time (p99)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 64
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_park_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "LockSupport.park/parkNanos calls lasting \u22651ms (e.g. idle pool workers, blocking-queue waits)."
+    },
+    {
+      "id": 27,
+      "title": "Safepoint pause duration (p99)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 64
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_safepoint_pause_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "Every JVM safepoint pause is recorded regardless of duration \u2014 unlike lock events there is no threshold."
+    },
+    {
+      "id": 28,
+      "title": "Threads reaching last safepoint",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 64
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_safepoint_threads",
+          "refId": "A",
+          "legendFormat": "threads at safepoint"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 29,
+      "title": "VM operation duration (p99 by operation)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_vmop_duration_seconds_bucket[$__rate_interval])) by (le, operation, safepoint))",
+          "refId": "A",
+          "legendFormat": "{{operation}} (safepoint={{safepoint}})"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 30,
+      "title": "JIT / Class loading / I/O",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 80
+      },
+      "panels": []
+    },
+    {
+      "id": 31,
+      "title": "JIT compile duration (p99 by compiler)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 81
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_jit_compile_seconds_bucket[$__rate_interval])) by (le, compiler))",
+          "refId": "A",
+          "legendFormat": "{{compiler}} p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "Compilations under 1ms are not recorded (enable.threshold)."
+    },
+    {
+      "id": 32,
+      "title": "Compiled native code size heatmap",
+      "type": "heatmap",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 81
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr_jit_compiled_code_bytes_bucket[$__rate_interval])) by (le)",
+          "refId": "A",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "options": {
+        "calculate": false,
+        "yAxis": {
+          "unit": "bytes",
+          "axisPlacement": "left"
+        },
+        "color": {
+          "mode": "scheme",
+          "scheme": "Spectral",
+          "steps": 64,
+          "reverse": false
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "legend": {
+          "show": true
+        },
+        "tooltip": {
+          "show": true,
+          "yHistogram": false
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        }
+      }
+    },
+    {
+      "id": 33,
+      "title": "JIT compilation attempts/sec by outcome",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 81
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "sum(rate(jfr_jit_compilations_total[$__rate_interval])) by (compiler, succeeded, osr)",
+          "refId": "A",
+          "legendFormat": "{{compiler}} succeeded={{succeeded}} osr={{osr}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 34,
+      "title": "Class loading",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 89
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_classes_loaded_total",
+          "refId": "A",
+          "legendFormat": "loaded (cumulative)"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "jfr_classes_unloaded_total",
+          "refId": "A",
+          "legendFormat": "unloaded (cumulative)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 35,
+      "title": "Exceptions thrown/sec",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 89
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "rate(jfr_exceptions_thrown_total[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "throwables/sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 36,
+      "title": "Compiler bailouts & bytes compiled",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 89
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "rate(jfr_jit_compiler_bailouts_total[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "bailouts/sec"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "rate(jfr_jit_compiler_standard_bytes_compiled_total[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "standard bytes/sec"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "rate(jfr_jit_compiler_osr_bytes_compiled_total[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "OSR bytes/sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      },
+      "description": "Bailouts on the left scale; bytes-compiled rates share the panel for a quick JIT-activity overview \u2014 see individual queries for exact units (bailouts=count/sec, bytes=bytes/sec)."
+    },
+    {
+      "id": 37,
+      "title": "Socket I/O throughput",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 97
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "rate(jfr_socket_read_bytes_total[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "read Bps"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "rate(jfr_socket_write_bytes_total[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "write Bps"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 38,
+      "title": "File I/O throughput",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 97
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "rate(jfr_file_read_bytes_total[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "read Bps"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "rate(jfr_file_write_bytes_total[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "write Bps"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 39,
+      "title": "Socket & file I/O latency (p99)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "vmetrics"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 97
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_socket_read_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "socket read p99"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_socket_write_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "socket write p99"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_file_read_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "file read p99"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "vmetrics"
+          },
+          "expr": "histogram_quantile(0.99, sum(rate(jfr_file_write_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A",
+          "legendFormat": "file write p99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  }
+}
