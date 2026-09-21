@@ -2,6 +2,9 @@ target/
 *.class
 *.jar
 *.jfr
+# ...except the committed JFR test fixture, which keeps the event tests fast
+# and deterministic. Regenerate with event/GenerateFixture.
+!agent/src/test/resources/fixtures/*.jfr
 .idea/
 *.iml
 .vscode/

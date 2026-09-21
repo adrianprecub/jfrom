@@ -279,3 +279,28 @@ Recorded during implementation of the skeleton; these amend the plan above.
 
 4. **`setCounterAbsolute` must ignore decreasing values.** A counter that goes backwards makes
    PromQL `rate()` synthesise a huge spike. Stated in the `MetricRegistry` contract.
+
+## Addendum — findings from Wave 1
+
+5. **`RecordedEvent` accessors throw `IllegalArgumentException`** for a missing field AND for
+   a type mismatch, so `hasField` alone is not a sufficient guard. In particular
+   `getLong("jvmUser")` throws rather than widening, because `jdk.CPULoad.jvmUser` is a
+   `float`. `RecordedEventView.getLong` falls back to `getDouble` so the `EventView`
+   contract ("widened to long") still holds. Verified: raw `getDouble` and `getFloat` work
+   correctly on float fields.
+
+6. **`jdk.CPULoad.jvmUser` and `jvmSystem` report `0.0` on macOS/aarch64**, while
+   `machineTotal` reports real values. A CPU panel built only on `jvmUser` will look broken
+   when the stack is run on a Mac host outside a container. Mapping packs should expose all
+   three, and the dashboard should lead with `machineTotal`. Inside the Linux container the
+   JVM-specific figures are expected to populate — verify at e2e rather than assuming.
+
+7. **TICKS happen to equal nanoseconds on this JDK 25.0.1/macOS-aarch64 combination**, so
+   `getLong("duration")` and `getDuration("duration").toNanos()` are numerically identical
+   *here*. This is platform-dependent and must not be relied on. The rule stands: always use
+   `getDuration` for `@Timespan` fields.
+
+8. **The `.jfr` test fixture is committed** at `agent/src/test/resources/fixtures/sample.jfr`
+   (148 KB, 350 events across 20 event types covering all four families), with a `.gitignore`
+   negation carved out of the blanket `*.jfr` rule. Regenerate with
+   `event/GenerateFixture`. Wave 3 mapping packs should assert against it.
