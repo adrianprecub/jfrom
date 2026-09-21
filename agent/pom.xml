@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.jfr2grafana</groupId>
+    <artifactId>jfr2grafana-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>jfr2grafana-agent</artifactId>
+  <name>jfr2grafana-agent</name>
+  <description>Java agent that streams JFR events into Prometheus metrics</description>
+
+  <dependencies>
+    <!-- The ONLY runtime dependency. Relocated by the shade plugin below so it
+         can never collide with a version already on the target application's
+         classpath. Everything else comes from the JDK (jdk.jfr, jdk.httpserver). -->
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>jfr2grafana-agent</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <relocations>
+                <relocation>
+                  <pattern>org.yaml.snakeyaml</pattern>
+                  <shadedPattern>io.jfr2grafana.agent.shaded.snakeyaml</shadedPattern>
+                </relocation>
+              </relocations>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>META-INF/maven/**</exclude>
+                    <exclude>module-info.class</exclude>
+                    <!-- SnakeYAML ships a multi-release jar; shade relocates the base classes but
+                         not META-INF/versions/**. This jar is not Multi-Release, so those copies
+                         are inert - but they would still ship classes in the org.yaml namespace
+                         we promised a target app we would never touch. -->
+                    <exclude>META-INF/versions/**</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Premain-Class>io.jfr2grafana.agent.Agent</Premain-Class>
+                    <Agent-Class>io.jfr2grafana.agent.Agent</Agent-Class>
+                    <Can-Redefine-Classes>false</Can-Redefine-Classes>
+                    <Can-Retransform-Classes>false</Can-Retransform-Classes>
+                    <Implementation-Title>jfr2grafana-agent</Implementation-Title>
+                    <Implementation-Version>${project.version}</Implementation-Version>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Runs after shade. Guards the property that makes this agent safe to attach to any
+           JVM: nothing ships outside our own package. Requires bash + unzip (POSIX hosts). -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>verify-shading</id>
+            <phase>verify</phase>
+            <goals><goal>exec</goal></goals>
+            <configuration>
+              <executable>${project.basedir}/../scripts/verify-shading.sh</executable>
+              <arguments>
+                <argument>${project.build.directory}/${project.build.finalName}.jar</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
