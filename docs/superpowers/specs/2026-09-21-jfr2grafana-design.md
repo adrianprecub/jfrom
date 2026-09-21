@@ -326,3 +326,31 @@ Recorded during implementation of the skeleton; these amend the plan above.
 11. **Agent failure is contained.** Verified live for a missing config file and for an already
     bound port: in both cases the agent logs `jfr2grafana: failed to start: ...` and the host
     application runs to completion with exit code 0.
+
+## Addendum — findings from Wave 3
+
+12. **The four packs were authored independently and needed naming fixes at integration.**
+    Running `promtool check metrics` over real agent output caught three violations no unit
+    test would: a `camelCase` label name (`objectClass` → `object_class`), gauges carrying the
+    histogram-reserved `_count` suffix (`jfr_thread_active_count` → `jfr_threads_active`), and
+    a gauge carrying the counter-reserved `_total` suffix (`jfr_safepoint_threads_total` →
+    `jfr_safepoint_threads`). The JFR *field* names stay camelCase, since those are the JDK's;
+    only the Prometheus-facing label and metric names are snake_case. Output is now lint-clean.
+
+13. **`MappingLoaderTest.loadBundledPacksToleratesAMissingMappingsDirectory` was retargeted.**
+    It asserted the bundled mappings directory was empty, which was true only before Wave 3.
+    All four pack authors independently hit it and correctly escalated rather than editing a
+    frozen file. It now asserts the property actually worth guarding: that every shipped pack
+    loads and merges without a duplicate metric name — the real risk when four packs are
+    written in parallel.
+
+14. **`CompilerStatistics.totalTimeSpent` is `@Timespan("MILLISECONDS")`, not TICKS.**
+    `kind: duration` still handles it, because `getDuration()` honours whatever unit the
+    `@Timespan` annotation declares. The rule "always use `kind: duration` for a `@Timespan`
+    field" holds regardless of the declared unit.
+
+15. **Reserved metric-name prefixes are what made four-way parallel authoring safe.**
+    `jfr_heap_`/`jfr_gc_`/`jfr_metaspace_`/`jfr_allocation_`, `jfr_cpu_`/`jfr_thread(s)_`,
+    `jfr_monitor_`/`jfr_park_`/`jfr_safepoint_`/`jfr_vmop_`, and
+    `jfr_jit_`/`jfr_class(es)_`/`jfr_socket_`/`jfr_file_`/`jfr_exception(s)_`. Each pack's test
+    asserts its own compliance, so a stray name fails the build rather than the agent's startup.

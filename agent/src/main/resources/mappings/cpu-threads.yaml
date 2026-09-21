@@ -1,0 +1,104 @@
+# CPU & Threads mapping pack (T8).
+#
+# Covers jdk.CPULoad, jdk.JavaThreadStatistics and jdk.ThreadCPULoad, per the "Verified JFR
+# ground truth" table in docs/superpowers/specs/2026-09-21-jfr2grafana-design.md.
+#
+# Namespace contract: every metric name below starts with jfr_cpu_ or jfr_thread_, one of the
+# three prefixes (jfr_cpu_, jfr_thread_, jfr_threads_) this pack owns, so it cannot collide with
+# a metric name from memory-gc.yaml, locks-safepoints.yaml or jit-io-class.yaml -
+# MappingConfig hard-fails the whole agent at load time on any duplicate.
+#
+# Departure from the suggested coverage: jdk.ThreadStart/jdk.ThreadEnd (thread churn) are
+# deliberately NOT mapped here. The committed replay fixture (GenerateFixture) never enables
+# those two events, so a rule for them would be untestable against that fixture - it would
+# either sit dead in this pack or force a change to a frozen test-fixture generator. Thread
+# churn is still visible indirectly via jfr_threads_active/jfr_threads_daemon moving
+# over time, which is sufficient for this POC.
+
+rules:
+  # jdk.CPULoad: periodic, float fields already expressed as a 0..1 fraction.
+  #
+  # TRAP (design doc addendum #6): jvmUser/jvmSystem read 0.0 on macOS/aarch64 while
+  # machineTotal reports real values. All three are mapped anyway - the dashboard should lead
+  # with machineTotal - and documented in docs/metrics/cpu-threads.md so nobody files a bug
+  # against a flat jvmUser/jvmSystem panel on a Mac dev box.
+  #
+  # TRAP: these are fractions, not percentages. kind: number reads them via getDouble with no
+  # x100 scaling; Grafana applies the "percentunit" (0..1) display format itself.
+  - event: jdk.CPULoad
+    enable: { period: 1s, stackTrace: false }
+    metrics:
+      - name: jfr_cpu_jvm_user_ratio
+        type: gauge
+        help: "Fraction (0..1) of available CPU consumed by the JVM in user mode. Reports 0.0 on macOS/aarch64 - see docs/metrics/cpu-threads.md."
+        value: { field: jvmUser, kind: number }
+
+      - name: jfr_cpu_jvm_system_ratio
+        type: gauge
+        help: "Fraction (0..1) of available CPU consumed by the JVM in kernel/system mode. Reports 0.0 on macOS/aarch64 - see docs/metrics/cpu-threads.md."
+        value: { field: jvmSystem, kind: number }
+
+      - name: jfr_cpu_machine_total_ratio
+        type: gauge
+        help: "Fraction (0..1) of total machine CPU in use (all processes). Populates on every platform, including macOS/aarch64; lead dashboard panels with this series."
+        value: { field: machineTotal, kind: number }
+
+  # jdk.JavaThreadStatistics: periodic snapshot of live JVM thread counts.
+  #
+  # TRAP (design doc): accumulatedCount is a cumulative JVM total since startup, so it is
+  # counter_absolute (set, never add) - not counter. activeCount/daemonCount/peakCount are
+  # instantaneous snapshots, so they are gauges. Mapping accumulatedCount as a plain counter
+  # would double-count on every sample and produce a rate curve that looks plausible and is
+  # completely wrong.
+  - event: jdk.JavaThreadStatistics
+    enable: { period: 1s, stackTrace: false }
+    metrics:
+      - name: jfr_threads_active
+        type: gauge
+        help: "Number of live threads, both daemon and non-daemon (jdk.JavaThreadStatistics.activeCount)."
+        value: { field: activeCount, kind: number }
+
+      - name: jfr_threads_daemon
+        type: gauge
+        help: "Number of live daemon threads (jdk.JavaThreadStatistics.daemonCount)."
+        value: { field: daemonCount, kind: number }
+
+      - name: jfr_threads_peak
+        type: gauge
+        help: "Peak live thread count since JVM start (jdk.JavaThreadStatistics.peakCount)."
+        value: { field: peakCount, kind: number }
+
+      - name: jfr_thread_accumulated_total
+        type: counter_absolute
+        help: "Cumulative number of threads ever started since JVM start (jdk.JavaThreadStatistics.accumulatedCount). Already a running total from the JVM - set, not added, per sample."
+        value: { field: accumulatedCount, kind: number }
+
+  # jdk.ThreadCPULoad: per-thread, periodic.
+  #
+  # TRAP (design doc): unbounded cardinality if labelled by eventThread (kind: thread) - one
+  # series per live thread, and thread pools churn threads over the JVM's lifetime, so distinct
+  # thread names keep growing. maxCardinality: 20 caps it: the sample app's own worker/driver
+  # threads plus a handful of JVM-internal threads comfortably fit under 20 in normal operation,
+  # and any overflow collapses to the shared "__other__" series rather than growing without
+  # bound. This is deliberately conservative for a POC dashboard - per-thread CPU is included
+  # because it is useful for spotting one runaway thread, but is not meant to enumerate every
+  # thread pool member individually; a panel built on it should treat "__other__" as "everything
+  # past the top 20" rather than a real thread.
+  - event: jdk.ThreadCPULoad
+    enable: { period: 1s, stackTrace: false }
+    metrics:
+      - name: jfr_thread_cpu_user_ratio
+        type: gauge
+        help: "Fraction (0..1) of a CPU consumed by one thread in user mode (jdk.ThreadCPULoad.user). Labelled by thread name; capped at maxCardinality=20, overflow collapses to __other__."
+        value: { field: user, kind: number }
+        labels:
+          - { name: thread, field: eventThread, kind: thread }
+        maxCardinality: 20
+
+      - name: jfr_thread_cpu_system_ratio
+        type: gauge
+        help: "Fraction (0..1) of a CPU consumed by one thread in kernel/system mode (jdk.ThreadCPULoad.system). Labelled by thread name; capped at maxCardinality=20, overflow collapses to __other__."
+        value: { field: system, kind: number }
+        labels:
+          - { name: thread, field: eventThread, kind: thread }
+        maxCardinality: 20

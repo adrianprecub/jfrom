@@ -86,11 +86,25 @@ class MappingLoaderTest {
     }
 
     @Test
-    void loadBundledPacksToleratesAMissingMappingsDirectory() {
-        // No mapping packs exist on the classpath yet (another task authors them later);
-        // the bundled-pack loader must not throw, just yield an empty config.
+    void loadBundledPacksMergesEveryShippedPackWithoutCollision() {
+        // Originally this asserted an empty result, because no packs existed yet. Now that they
+        // do, the property worth guarding is the one that actually breaks: the shipped packs are
+        // authored independently, and MappingConfig rejects a metric name declared by two of
+        // them. Merging them all here is what catches that at build time rather than at startup.
         MappingConfig config = MappingLoader.loadBundledPacks();
-        assertThat(config.rules()).isEmpty();
+
+        assertThat(config.rules()).isNotEmpty();
+        assertThat(config.rules())
+                .allSatisfy(rule -> assertThat(rule.event()).startsWith("jdk."));
+
+        List<String> metricNames = config.rules().stream()
+                .flatMap(rule -> rule.metrics().stream())
+                .map(MetricSpec::name)
+                .toList();
+
+        // Duplicates would already have thrown inside merge; this pins the reason if it ever does.
+        assertThat(metricNames).doesNotHaveDuplicates();
+        assertThat(metricNames).allSatisfy(name -> assertThat(name).startsWith("jfr_"));
     }
 
     @Test

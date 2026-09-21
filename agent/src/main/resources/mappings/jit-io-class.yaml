@@ -1,0 +1,207 @@
+# JIT compilation, class loading, exceptions, and socket/file I/O.
+#
+# Every metric name is prefixed with one of jfr_jit_, jfr_class_, jfr_classes_, jfr_socket_,
+# jfr_file_, jfr_exception_, jfr_exceptions_ - see docs/metrics/jit-io-class.md for the full
+# inventory and the reasoning behind each counter/counter_absolute/histogram choice.
+#
+# Ground truth for every field name/type below was verified against JDK 25.0.1 via
+# `jfr metadata` (see docs/superpowers/specs/2026-09-21-jfr2grafana-design.md).
+
+rules:
+  # ------------------------------------------------------------------
+  # jdk.Compilation - one event per JIT compilation attempt.
+  #
+  # `duration` is @Timespan("TICKS") -> kind: duration, never kind: number.
+  # `succeded` is spelled exactly like that in the JDK itself (its own typo, not ours); spelling
+  # it "succeeded" here would silently resolve to nothing (a missing field degrades to "no
+  # sample"), so it is used verbatim as the source field for the `succeeded` label below.
+  #
+  # enable.threshold is a deliberate 1ms floor: JIT recompiles trivial methods constantly under
+  # normal load (mostly fast C1 compiles), and admitting every one of them at threshold 0 would
+  # make this the highest-volume event in the whole pack for no analytical benefit - the compiles
+  # worth graphing (C2, OSR, anything slow enough to matter) all clear 1ms comfortably. This is
+  # unlike the I/O events below, where a nonzero threshold would silently drop legitimate
+  # byte-count deltas.
+  - event: jdk.Compilation
+    enable: { threshold: 1ms, stackTrace: false }
+    metrics:
+      - name: jfr_jit_compile_seconds
+        type: histogram
+        help: "JIT compilation duration"
+        value: { field: duration, kind: duration, unit: seconds }
+        labels:
+          - { name: compiler, field: compiler, kind: string }
+          - { name: level, field: compileLevel, kind: int }
+        buckets: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.5, 1]
+
+      - name: jfr_jit_compiled_code_bytes
+        type: histogram
+        help: "Native code size produced per JIT compilation"
+        value: { field: codeSize, kind: number }
+        labels:
+          - { name: compiler, field: compiler, kind: string }
+        buckets: [64, 256, 1024, 4096, 16384, 65536, 262144, 1048576]
+
+      - name: jfr_jit_compilations_total
+        type: counter
+        help: "Count of JIT compilation attempts, by compiler, success, and on-stack-replacement"
+        labels:
+          - { name: compiler, field: compiler, kind: string }
+          - { name: succeeded, field: succeded, kind: boolean }
+          - { name: osr, field: isOsr, kind: boolean }
+
+  # ------------------------------------------------------------------
+  # jdk.CompilerStatistics - periodic snapshot of JVM-wide compiler totals.
+  #
+  # Every numeric field here (compileCount, bailoutCount, standardBytesCompiled,
+  # osrBytesCompiled, nmethodsSize, totalTimeSpent) is a cumulative total the JVM has
+  # accumulated since startup, NOT a per-event delta. Mapping any of them as `counter` would add
+  # each snapshot's already-cumulative value on top of the last, multiplying it out of all
+  # proportion to reality; `counter_absolute` sets the series to the reported total instead
+  # (and, per MetricRegistry's contract, ignores a value that goes backwards).
+  #
+  # `totalTimeSpent` is declared @Timespan("MILLISECONDS") (not TICKS, but still a real
+  # @Timespan field), so `getDuration()` still applies the correct conversion - kind: duration
+  # is used here purely to get that conversion for free, exactly as for a TICKS field.
+  - event: jdk.CompilerStatistics
+    enable: { period: 1s, stackTrace: false }
+    metrics:
+      - name: jfr_jit_compiler_compiled_methods_total
+        type: counter_absolute
+        help: "Cumulative number of methods compiled since JVM start"
+        value: { field: compileCount, kind: number }
+
+      - name: jfr_jit_compiler_bailouts_total
+        type: counter_absolute
+        help: "Cumulative number of compilation bailouts since JVM start"
+        value: { field: bailoutCount, kind: number }
+
+      - name: jfr_jit_compiler_standard_bytes_compiled_total
+        type: counter_absolute
+        help: "Cumulative bytes of standard (non-OSR) compiled code since JVM start"
+        value: { field: standardBytesCompiled, kind: number }
+
+      - name: jfr_jit_compiler_osr_bytes_compiled_total
+        type: counter_absolute
+        help: "Cumulative bytes of on-stack-replacement compiled code since JVM start"
+        value: { field: osrBytesCompiled, kind: number }
+
+      - name: jfr_jit_compiler_nmethods_bytes_total
+        type: counter_absolute
+        help: "Cumulative size in bytes of compiled nmethods produced since JVM start"
+        value: { field: nmethodsSize, kind: number }
+
+      - name: jfr_jit_compiler_time_seconds_total
+        type: counter_absolute
+        help: "Cumulative wall-clock time spent compiling since JVM start"
+        value: { field: totalTimeSpent, kind: duration, unit: seconds }
+
+  # ------------------------------------------------------------------
+  # jdk.ClassLoadingStatistics - periodic snapshot; loadedClassCount/unloadedClassCount are
+  # cumulative JVM totals since startup, so counter_absolute (not counter) here too.
+  - event: jdk.ClassLoadingStatistics
+    enable: { period: 1s, stackTrace: false }
+    metrics:
+      - name: jfr_classes_loaded_total
+        type: counter_absolute
+        help: "Cumulative number of classes loaded since JVM start"
+        value: { field: loadedClassCount, kind: number }
+
+      - name: jfr_classes_unloaded_total
+        type: counter_absolute
+        help: "Cumulative number of classes unloaded since JVM start"
+        value: { field: unloadedClassCount, kind: number }
+
+  # ------------------------------------------------------------------
+  # jdk.ExceptionStatistics - periodic snapshot; `throwables` is a cumulative JVM total since
+  # startup, so counter_absolute.
+  - event: jdk.ExceptionStatistics
+    enable: { period: 1s, stackTrace: false }
+    metrics:
+      - name: jfr_exceptions_thrown_total
+        type: counter_absolute
+        help: "Cumulative number of Throwable instances created since JVM start"
+        value: { field: throwables, kind: number }
+
+  # ------------------------------------------------------------------
+  # jdk.SocketRead / jdk.SocketWrite - one event per socket read/write call.
+  #
+  # `duration` is @Timespan("TICKS") -> kind: duration. `bytesRead`/`bytesWritten` are the bytes
+  # moved by THIS call, i.e. a per-event delta, so they are summed with `counter` (never
+  # counter_absolute).
+  #
+  # enable.threshold is left at an explicit 0ms - NOT raised - even though these can be a
+  # high-volume event under real traffic. Unlike jdk.Compilation, a nonzero threshold here would
+  # silently drop the bytesRead/bytesWritten of every call that happens to complete quickly,
+  # which for a loopback or LAN socket is nearly all of them; that would make
+  # jfr_socket_read_bytes_total / jfr_socket_write_bytes_total systematically undercount true
+  # throughput; the byte counters are the more valuable signal for this pack than shedding load
+  # by threshold. Event volume is instead bounded the safe way: no per-event label at all, since
+  # `host`/`address` (and, depending on which side of the connection is looking, `port`) are
+  # unbounded or attacker-influenced. See docs/metrics/jit-io-class.md.
+  - event: jdk.SocketRead
+    enable: { threshold: 0ms, stackTrace: false }
+    metrics:
+      - name: jfr_socket_read_seconds
+        type: histogram
+        help: "Socket read latency"
+        value: { field: duration, kind: duration, unit: seconds }
+        buckets: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5]
+
+      - name: jfr_socket_read_bytes_total
+        type: counter
+        help: "Bytes read from sockets"
+        value: { field: bytesRead, kind: number }
+
+  - event: jdk.SocketWrite
+    enable: { threshold: 0ms, stackTrace: false }
+    metrics:
+      - name: jfr_socket_write_seconds
+        type: histogram
+        help: "Socket write latency"
+        value: { field: duration, kind: duration, unit: seconds }
+        buckets: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5]
+
+      - name: jfr_socket_write_bytes_total
+        type: counter
+        help: "Bytes written to sockets"
+        value: { field: bytesWritten, kind: number }
+
+  # ------------------------------------------------------------------
+  # jdk.FileRead / jdk.FileWrite - one event per file read/write call.
+  #
+  # Same reasoning as sockets above for duration (kind: duration) and bytes (counter, per-event
+  # delta). `path` is explicitly NOT used as a label: temp files created with random names
+  # (exactly what this project's own fixture and sample workloads do) would each mint a brand-new
+  # label value forever, defeating the cardinality guard by construction rather than by
+  # accident - capping it would not help either, since the "overflow" bucket would absorb nearly
+  # every sample and become meaningless. Aggregate file I/O totals are the useful signal here;
+  # per-path breakdown belongs in a log/trace tool, which is explicitly out of scope for this
+  # project (see the design doc's "Out of scope" list).
+  - event: jdk.FileRead
+    enable: { threshold: 0ms, stackTrace: false }
+    metrics:
+      - name: jfr_file_read_seconds
+        type: histogram
+        help: "File read latency"
+        value: { field: duration, kind: duration, unit: seconds }
+        buckets: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5]
+
+      - name: jfr_file_read_bytes_total
+        type: counter
+        help: "Bytes read from files"
+        value: { field: bytesRead, kind: number }
+
+  - event: jdk.FileWrite
+    enable: { threshold: 0ms, stackTrace: false }
+    metrics:
+      - name: jfr_file_write_seconds
+        type: histogram
+        help: "File write latency"
+        value: { field: duration, kind: duration, unit: seconds }
+        buckets: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5]
+
+      - name: jfr_file_write_bytes_total
+        type: counter
+        help: "Bytes written to files"
+        value: { field: bytesWritten, kind: number }

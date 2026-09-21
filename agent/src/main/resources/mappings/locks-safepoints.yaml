@@ -1,0 +1,119 @@
+# Locks & Safepoints mapping pack (T9).
+#
+# Covers jdk.JavaMonitorEnter, jdk.JavaMonitorWait, jdk.ThreadPark, jdk.SafepointBegin and
+# jdk.ExecuteVMOperation - the one family of this project that JMX/Micrometer cannot show at
+# all: nothing in the standard JVM MXBeans reports how long threads actually queued behind a
+# contended lock, how long the whole JVM stood still at a safepoint, or what kind of VM
+# operation caused that pause.
+#
+# Metric namespace: every name below starts with jfr_monitor_, jfr_park_, jfr_safepoint_ or
+# jfr_vmop_, per this pack's exclusive prefix allocation (see design doc).
+#
+# All five events carry an @Timespan("TICKS") `duration` field (verified ground truth table);
+# every duration-based metric here therefore uses value.kind: duration with unit: seconds -
+# never kind: number, which would read raw ticks as if they were already seconds.
+#
+# Cardinality: monitorClass and parkedClass are application-dependent and effectively
+# unbounded (any class can be synchronized on or parked under), so both labelled metrics below
+# set a conservative maxCardinality of 20 - enough to distinguish the small number of *hot*
+# contended locks/park sites that actually matter on a dashboard, while guaranteeing the
+# registry can never grow without bound. previousOwner and eventThread (thread-kind fields,
+# worse than class-kind: every thread has a distinct name) are deliberately not used as labels
+# anywhere in this pack. jdk.SafepointBegin.safepointId is deliberately not used as a label
+# either - it is unique per event, i.e. unbounded cardinality with zero grouping value.
+# jdk.ExecuteVMOperation.operation and .safepoint are the exception: operation is a small,
+# fixed set of JVM-internal operation names and safepoint is a boolean, so both are genuinely
+# low-cardinality and left under the metric-wide default cap (100) without an explicit override.
+#
+# Event volume: jdk.JavaMonitorEnter, jdk.JavaMonitorWait and jdk.ThreadPark can fire on every
+# single lock acquisition/wait/park in a busy application - at a 0ms threshold this can flood
+# the stream and add real overhead just from event emission. All three are enabled with
+# enable.threshold: 1ms, so only contention/waits/parks that actually cost something are
+# recorded; sub-1ms contention is deliberately invisible on the resulting dashboards (see
+# docs/metrics/locks-safepoints.md). jdk.SafepointBegin and jdk.ExecuteVMOperation are not
+# thresholded: their rate is governed by the JVM itself (one pair per safepoint), not by
+# application lock-call volume, so there is no equivalent flood risk, and the whole point of
+# this pack is to show even very short safepoint pauses that JMX cannot see at all.
+#
+# stackTrace is explicitly false on every rule: these events capture stack traces by default,
+# and capturing them is the dominant cost of high-frequency events such as JavaMonitorEnter -
+# this project is time-series-only and never reads a stack.
+
+rules:
+  - event: jdk.JavaMonitorEnter
+    enable: { threshold: 1ms, stackTrace: false }
+    metrics:
+      - name: jfr_monitor_blocked_seconds
+        type: histogram
+        help: >-
+          Time a thread spent blocked waiting to enter a contended monitor, labelled by the
+          class of the monitor object. Events under 1ms are not recorded - see enable.threshold.
+        value: { field: duration, kind: duration, unit: seconds }
+        labels:
+          - { name: monitor_class, field: monitorClass, kind: class }
+        maxCardinality: 20
+        buckets: [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+  - event: jdk.JavaMonitorWait
+    enable: { threshold: 1ms, stackTrace: false }
+    metrics:
+      - name: jfr_monitor_wait_seconds
+        type: histogram
+        help: >-
+          Time a thread spent in Object.wait() on a monitor, labelled by monitor class and
+          whether the wait ended by timing out rather than being notified. Events under 1ms are
+          not recorded - see enable.threshold.
+        value: { field: duration, kind: duration, unit: seconds }
+        labels:
+          - { name: monitor_class, field: monitorClass, kind: class }
+          - { name: timed_out, field: timedOut, kind: boolean }
+        maxCardinality: 20
+        buckets: [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+  - event: jdk.ThreadPark
+    enable: { threshold: 1ms, stackTrace: false }
+    metrics:
+      - name: jfr_park_seconds
+        type: histogram
+        help: >-
+          Time a thread spent parked (LockSupport.park/parkNanos and its callers, e.g. a pool
+          worker idling or a blocking-queue wait), labelled by the class whose code invoked
+          park. Events under 1ms are not recorded - see enable.threshold.
+        value: { field: duration, kind: duration, unit: seconds }
+        labels:
+          - { name: parked_class, field: parkedClass, kind: class }
+        maxCardinality: 20
+        buckets: [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+  - event: jdk.SafepointBegin
+    enable: { threshold: 0ms, stackTrace: false }
+    metrics:
+      - name: jfr_safepoint_pause_seconds
+        type: histogram
+        help: >-
+          Duration of each JVM safepoint pause, during which every application thread is
+          stopped. One sample per safepoint; not labelled by safepointId, which is unique per
+          event and would be unbounded cardinality with no grouping value.
+        value: { field: duration, kind: duration, unit: seconds }
+        buckets: [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+      - name: jfr_safepoint_threads
+        type: gauge
+        help: >-
+          Number of threads that had to reach the safepoint, from the most recently observed
+          SafepointBegin event.
+        value: { field: totalThreadCount, kind: number }
+
+  - event: jdk.ExecuteVMOperation
+    enable: { threshold: 0ms, stackTrace: false }
+    metrics:
+      - name: jfr_vmop_duration_seconds
+        type: histogram
+        help: >-
+          Duration of each VM operation executed by the VM thread, labelled by operation name
+          and whether it required a safepoint. operation is a small, fixed set of JVM-internal
+          names, and safepoint is a boolean - both are genuinely low-cardinality labels.
+        value: { field: duration, kind: duration, unit: seconds }
+        labels:
+          - { name: operation, field: operation, kind: string }
+          - { name: safepoint, field: safepoint, kind: boolean }
+        buckets: [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]

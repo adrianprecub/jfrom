@@ -1,0 +1,135 @@
+# Memory & GC mapping pack (T7).
+#
+# Covers: jdk.GCHeapSummary, jdk.GarbageCollection, jdk.GCPhasePause,
+# jdk.MetaspaceSummary, jdk.ObjectAllocationSample.
+#
+# Verified against JDK 25.0.1 (`jfr metadata`) - see docs/superpowers/specs/2026-09-21-jfr2grafana-design.md
+# "Verified JFR ground truth" table. Field names below are not guessed.
+#
+# Naming: every metric starts with jfr_heap_, jfr_gc_, jfr_metaspace_ or jfr_allocation_ -
+# this pack's exclusive namespace slice (see MappingConfig's duplicate-name guard).
+rules:
+  # ------------------------------------------------------------------
+  # jdk.GCHeapSummary fires twice per GC (when="Before GC" / "After GC").
+  # We only want post-GC occupancy for a "how full is the heap" gauge, so filter to "After GC".
+  # No collector-name field exists on this event (that's on jdk.GarbageCollection), and gcId is
+  # unbounded/ever-increasing, so no labels are applied here.
+  # ------------------------------------------------------------------
+  - event: jdk.GCHeapSummary
+    enable: { period: everyChunk, stackTrace: false }
+    filter: { when: "After GC" }
+    metrics:
+      - name: jfr_heap_used_bytes
+        type: gauge
+        help: "Heap bytes in use, sampled after each garbage collection"
+        value: { field: heapUsed, kind: number }
+
+      - name: jfr_heap_committed_bytes
+        type: gauge
+        help: "Heap bytes committed (heapSpace.committedSize), sampled after each garbage collection"
+        value: { field: heapSpace.committedSize, kind: number }
+
+  # ------------------------------------------------------------------
+  # jdk.GarbageCollection: one event per completed GC cycle. duration/sumOfPauses/longestPause
+  # are all @Timespan("TICKS") - MUST use kind: duration, never kind: number.
+  # name = collector ("G1Full", "G1New", ...), cause = trigger reason - both low cardinality.
+  # ------------------------------------------------------------------
+  - event: jdk.GarbageCollection
+    enable: { threshold: 0ms, stackTrace: false }
+    metrics:
+      - name: jfr_gc_pause_seconds
+        type: histogram
+        help: "Distribution of garbage collection pause durations"
+        value: { field: duration, kind: duration, unit: seconds }
+        labels:
+          - { name: gc, field: name, kind: string }
+          - { name: cause, field: cause, kind: string }
+        buckets: [0.0001, 0.00025, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+      - name: jfr_gc_count_total
+        type: counter
+        help: "Total number of garbage collection cycles"
+        labels:
+          - { name: gc, field: name, kind: string }
+          - { name: cause, field: cause, kind: string }
+
+      - name: jfr_gc_longest_pause_seconds
+        type: gauge
+        help: "Longest individual pause within the most recent garbage collection cycle"
+        value: { field: longestPause, kind: duration, unit: seconds }
+        labels:
+          - { name: gc, field: name, kind: string }
+          - { name: cause, field: cause, kind: string }
+
+      - name: jfr_gc_sum_of_pauses_seconds_total
+        type: counter
+        help: "Running total of time Java execution was paused for garbage collection"
+        value: { field: sumOfPauses, kind: duration, unit: seconds }
+        labels:
+          - { name: gc, field: name, kind: string }
+          - { name: cause, field: cause, kind: string }
+
+  # ------------------------------------------------------------------
+  # jdk.GCPhasePause: finer-grained than jdk.GarbageCollection - one event per GC phase (e.g.
+  # "GC Pause", "Pause Young"). `name` here is the phase, not the collector, and is low
+  # cardinality (a small, fixed set of phase names per collector).
+  # ------------------------------------------------------------------
+  - event: jdk.GCPhasePause
+    enable: { threshold: 0ms, stackTrace: false }
+    metrics:
+      - name: jfr_gc_phase_pause_seconds
+        type: histogram
+        help: "Distribution of individual GC phase pause durations"
+        value: { field: duration, kind: duration, unit: seconds }
+        labels:
+          - { name: phase, field: name, kind: string }
+        buckets: [0.0001, 0.00025, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
+
+  # ------------------------------------------------------------------
+  # jdk.MetaspaceSummary also fires twice per GC (when="Before GC" / "After GC") and mirrors
+  # jdk.GCHeapSummary's nested-struct shape: metaspace/dataSpace/classSpace are all
+  # MetaspaceSizes structs with committed/used/reserved fields. We report "used"/"committed"
+  # for the overall metaspace and its class-space sub-region (classloading pressure is the
+  # most actionable breakdown); data-space is intentionally left uncovered to keep this pack's
+  # metric count proportionate to the suggested coverage.
+  # ------------------------------------------------------------------
+  - event: jdk.MetaspaceSummary
+    enable: { period: everyChunk, stackTrace: false }
+    filter: { when: "After GC" }
+    metrics:
+      - name: jfr_metaspace_used_bytes
+        type: gauge
+        help: "Metaspace bytes in use, sampled after each garbage collection"
+        value: { field: metaspace.used, kind: number }
+
+      - name: jfr_metaspace_committed_bytes
+        type: gauge
+        help: "Metaspace bytes committed, sampled after each garbage collection"
+        value: { field: metaspace.committed, kind: number }
+
+      - name: jfr_metaspace_class_used_bytes
+        type: gauge
+        help: "Class-space (compressed class pointers) bytes in use, sampled after each garbage collection"
+        value: { field: classSpace.used, kind: number }
+
+      - name: jfr_metaspace_class_committed_bytes
+        type: gauge
+        help: "Class-space (compressed class pointers) bytes committed, sampled after each garbage collection"
+        value: { field: classSpace.committed, kind: number }
+
+  # ------------------------------------------------------------------
+  # jdk.ObjectAllocationSample: weight is an ESTIMATED byte count from a *sampled* event, not an
+  # exact per-allocation measurement (see docs/metrics/memory-gc.md for the caveat). Summing it
+  # as a counter yields an estimated allocation rate via rate()/increase() in PromQL.
+  # objectClass is unbounded, hence the explicit maxCardinality.
+  # ------------------------------------------------------------------
+  - event: jdk.ObjectAllocationSample
+    enable: { stackTrace: false }
+    metrics:
+      - name: jfr_allocation_bytes_total
+        type: counter
+        help: "Estimated bytes allocated, derived from sampled allocation weight (not exact)"
+        value: { field: weight, kind: number }
+        labels:
+          - { name: object_class, field: objectClass, kind: class }
+        maxCardinality: 50

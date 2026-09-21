@@ -2,6 +2,6 @@ rules:
   - event: jdk.JavaThreadStatistics
     enable: { period: everyChunk }
     metrics:
-      - name: jfr_thread_active_count
+      - name: jfr_threads_active
         type: gauge
         value: { field: activeCount, kind: number }
