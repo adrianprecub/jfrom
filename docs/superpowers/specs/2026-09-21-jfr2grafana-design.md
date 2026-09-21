@@ -301,7 +301,7 @@ Recorded during implementation of the skeleton; these amend the plan above.
    `getDuration` for `@Timespan` fields.
 
 8. **The `.jfr` test fixture is committed** at `agent/src/test/resources/fixtures/sample.jfr`
-   (148 KB, 350 events across 20 event types covering all four families), with a `.gitignore`
+   (148 KB, 350 events across 21 event types covering all four families), with a `.gitignore`
    negation carved out of the blanket `*.jfr` rule. Regenerate with
    `event/GenerateFixture`. Wave 3 mapping packs should assert against it.
 
