@@ -304,3 +304,25 @@ Recorded during implementation of the skeleton; these amend the plan above.
    (148 KB, 350 events across 20 event types covering all four families), with a `.gitignore`
    negation carved out of the blanket `*.jfr` rule. Regenerate with
    `event/GenerateFixture`. Wave 3 mapping packs should assert against it.
+
+## Addendum — findings from Wave 2
+
+9. **`RecordingStream` has no `setFlushInterval` and no `setDaemon` in JDK 25.** Verified with
+   `javap`: the class exposes `onFlush(Runnable)` but no flush setter, and `setDaemon` exists
+   only on the internal, non-exported `AbstractEventStream`. `MappingEngine` therefore calls
+   the blocking `start()` from a thread it creates and marks daemon itself, rather than
+   `startAsync()` which would spawn JFR's own non-daemon thread.
+   Measured empirically: the default flush interval is already ~1s, and passing
+   `setSettings(Map.of("flush-interval", "1 s"))` produces the same ~1s cadence. Relying on
+   the default is correct; no tuning is needed to meet the "live" requirement.
+
+10. **`com.sun.net.httpserver.HttpServer`'s internal HTTP-Dispatcher thread inherits daemon
+    status from whichever thread calls `start()`.** Calling it from `premain` (non-daemon)
+    leaves the dispatcher non-daemon and **keeps the host JVM alive after its `main` returns** —
+    an observability agent silently preventing application shutdown. `MetricsServer` calls
+    `server.start()` from a throwaway daemon thread. Verified end-to-end: a host app with the
+    agent attached exits ~1s after `main` returns, leaving no process behind.
+
+11. **Agent failure is contained.** Verified live for a missing config file and for an already
+    bound port: in both cases the agent logs `jfr2grafana: failed to start: ...` and the host
+    application runs to completion with exit code 0.
