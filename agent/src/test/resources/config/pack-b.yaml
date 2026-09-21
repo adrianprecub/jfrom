@@ -1,0 +1,7 @@
+rules:
+  - event: jdk.JavaThreadStatistics
+    enable: { period: everyChunk }
+    metrics:
+      - name: jfr_thread_active_count
+        type: gauge
+        value: { field: activeCount, kind: number }

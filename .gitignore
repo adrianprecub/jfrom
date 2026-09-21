@@ -7,3 +7,7 @@ target/
 .vscode/
 .DS_Store
 docker/data/
+
+# Transient agent worktrees and local-only Claude settings
+.claude/worktrees/
+.claude/settings.local.json

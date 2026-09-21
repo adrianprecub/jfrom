@@ -1,0 +1,7 @@
+rules:
+  - event: jdk.CPULoad
+    enable: { period: 1s }
+    metrics:
+      - name: jfr_cpu_jvm_user_ratio
+        type: gauge
+        value: { field: jvmUser, kind: number }

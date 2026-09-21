@@ -1,0 +1,6 @@
+rules:
+  - event: jdk.CompilerStatistics
+    metrics:
+      - name: jfr_shared_metric_total
+        type: counter_absolute
+        value: { field: compileCount, kind: number }
