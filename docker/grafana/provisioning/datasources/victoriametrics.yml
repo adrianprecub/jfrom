@@ -1,0 +1,15 @@
+# Provisions the single datasource this POC needs. uid is fixed and stable
+# ("vmetrics") because Wave 4's dashboard JSON references it directly.
+apiVersion: 1
+
+datasources:
+  - name: VictoriaMetrics
+    type: prometheus
+    uid: vmetrics
+    access: proxy
+    url: http://victoriametrics:8428
+    isDefault: true
+    jsonData:
+      timeInterval: 1s
+      httpMethod: GET
+    editable: false

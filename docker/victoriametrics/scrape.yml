@@ -1,0 +1,26 @@
+# Prometheus-format scrape config, read natively by VictoriaMetrics via
+# -promscrape.config (no separate Prometheus container).
+#
+# 1s scrape_interval is deliberate: it is what makes the demo dashboard feel
+# live. Do not "fix" this back to the 15s default.
+global:
+  scrape_interval: 1s
+  scrape_timeout: 1s
+
+scrape_configs:
+  # The jfr2grafana agent's own Prometheus text endpoint, embedded in the
+  # sample-app container.
+  - job_name: jfr2grafana-agent
+    static_configs:
+      - targets: ["sample-app:9404"]
+        labels:
+          service: sample-app
+
+  # VictoriaMetrics' own metrics, so there is a fallback signal to look at
+  # (e.g. to confirm the stack itself is alive) if the agent target is down
+  # because its premain isn't implemented yet.
+  - job_name: victoriametrics
+    static_configs:
+      - targets: ["localhost:8428"]
+        labels:
+          service: victoriametrics
