@@ -32,6 +32,10 @@ services:
       - "--promscrape.config=/etc/victoriametrics/scrape.yml"
       - "--retentionPeriod=1d"
       - "--promscrape.configCheckInterval=5s"
+      # VictoriaMetrics defaults to hiding the most recent 30s from instant queries, which
+      # would leave every Grafana panel half a minute behind however fast we scrape. This is
+      # a live-streaming demo on a 1s scrape, so the offset has to come down to match.
+      - "--search.latencyOffset=1s"
     volumes:
       - ./victoriametrics/scrape.yml:/etc/victoriametrics/scrape.yml:ro
     ports:

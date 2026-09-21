@@ -354,3 +354,27 @@ Recorded during implementation of the skeleton; these amend the plan above.
     `jfr_monitor_`/`jfr_park_`/`jfr_safepoint_`/`jfr_vmop_`, and
     `jfr_jit_`/`jfr_class(es)_`/`jfr_socket_`/`jfr_file_`/`jfr_exception(s)_`. Each pack's test
     asserts its own compliance, so a stray name fails the build rather than the agent's startup.
+
+## Addendum — findings from Wave 4
+
+16. **VictoriaMetrics hides the most recent 30s from instant queries by default.**
+    `-search.latencyOffset` defaults to `30s`. With a 1s scrape and a 5s dashboard refresh,
+    every Grafana panel would still have sat 30 seconds behind reality — fatal for a project
+    whose premise is live streaming, and invisible unless you query shortly after startup.
+    Found because an acceptance check 18s after a cold start returned zero series while the
+    scrape target read `up` and the agent was demonstrably serving 631 `jfr_` lines.
+    Set to `1s`. Measured after the fix: series are queryable within 5s of a cold start.
+
+17. **Grafana 13 changed `/api/dashboards/home`** to return `{"redirectUri": ...}` rather than
+    the dashboard inline. A check parsing the old shape reports a false failure.
+
+18. **The home dashboard must be set declaratively**, via
+    `GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH`. Setting it through Grafana's API works but
+    persists only in the `grafana-data` volume, so a clean checkout would open Grafana's
+    default home instead and the one-command promise would hold only on the machine where the
+    API call was made. Verified from a destroyed volume.
+
+19. **`object_class` on `jfr_allocation_bytes_total` overflows its cardinality cap heavily** —
+    ~19,900 drops in a few minutes under churn. The guard is doing its job, but the allocation
+    panel shows the top classes plus an `__other__` bucket rather than a complete breakdown.
+    Worth knowing before reading that panel as exhaustive.
