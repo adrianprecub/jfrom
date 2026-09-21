@@ -1,0 +1,13 @@
+# Scoped to sample-app/Dockerfile: BuildKit looks for "<dockerfile>.dockerignore"
+# next to the Dockerfile before falling back to a root-level .dockerignore, so
+# this applies even though the build context is the repo root.
+#
+# Kept deliberately small: it must NOT exclude agent/target/jfr2grafana-agent.jar,
+# since the Dockerfile's build stage optionally bundles that sibling-module jar.
+.git
+.gitignore
+**/.idea
+**/*.iml
+**/.vscode
+docs
+sample-app/target

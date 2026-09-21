@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jfr2grafana-sample-app
+
+# Settings for the workload endpoints and the always-on background driver
+# that keeps every JFR event family producing signal from startup.
+sample:
+  driver:
+    # Master switch. Set to false to drive load only via the /load/* endpoints.
+    enabled: true
+    # How long each phase (churn -> contend -> leak -> io -> cpu) runs before rotating.
+    phase-duration: 5s
+    # 1 (gentle) .. 10 (aggressive); scales the load passed into each workload.
+    intensity: 3
+  leak:
+    # Hard cap on retained chunks so a long demo cannot OOM the container.
+    max-entries: 2000
+    chunk-size-bytes: 8192
+
+logging:
+  level:
+    io.jfr2grafana.sample: INFO

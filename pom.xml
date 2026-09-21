@@ -21,7 +21,13 @@
     <maven.compiler.release>25</maven.compiler.release>
 
     <snakeyaml.version>2.7</snakeyaml.version>
-    <junit.version>5.14.4</junit.version>
+    <!-- Must stay in step with spring-boot-dependencies: Spring Framework 7's
+         SpringExtension calls an ExtensionContext.Store API that only exists in
+         JUnit 6, so Spring context tests fail with NoSuchMethodError on JUnit 5. -->
+    <!-- Must stay in step with spring-boot-dependencies. Spring Framework 7's
+         SpringExtension calls an ExtensionContext.Store API that exists only in
+         JUnit 6, so Spring context tests die with NoSuchMethodError on JUnit 5. -->
+    <junit.version>6.0.3</junit.version>
     <assertj.version>3.27.7</assertj.version>
     <spring-boot.version>4.1.1</spring-boot.version>
 

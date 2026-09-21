@@ -1,0 +1,10 @@
+# Test-classpath override: keeps the background driver off so it never
+# interferes with assertions, and shrinks the leak cap so unit tests stay fast.
+sample:
+  driver:
+    enabled: false
+    phase-duration: 50ms
+    intensity: 1
+  leak:
+    max-entries: 50
+    chunk-size-bytes: 1024
