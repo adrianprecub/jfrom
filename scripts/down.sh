@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tears down the jfr2grafana docker-compose stack started by up.sh.
+# Tears down the jfrom docker-compose stack started by up.sh.
 #
 # Usage:
 #   ./scripts/down.sh            # stop and remove containers/network

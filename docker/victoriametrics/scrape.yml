@@ -8,9 +8,9 @@ global:
   scrape_timeout: 1s
 
 scrape_configs:
-  # The jfr2grafana agent's own Prometheus text endpoint, embedded in the
+  # The jfrom agent's own Prometheus text endpoint, embedded in the
   # sample-app container.
-  - job_name: jfr2grafana-agent
+  - job_name: jfrom-agent
     static_configs:
       - targets: ["sample-app:9404"]
         labels:

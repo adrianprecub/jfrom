@@ -66,7 +66,7 @@ it as `kind: number` would report raw milliseconds under a `_seconds` name.
 `jdk.FileRead.path`/`jdk.FileWrite.path` are unbounded: this project's own fixture generator and
 sample workload both create temp files with randomly-generated names, so labelling by `path`
 would mint a fresh time series (and, past `maxCardinality`, a fresh
-`jfr2grafana_cardinality_dropped_total` increment) for essentially every file operation forever.
+`jfrom_cardinality_dropped_total` increment) for essentially every file operation forever.
 Capping it doesn't rescue the situation either — once cardinality is dominated by one-off paths,
 the collapsed `__other__` bucket absorbs nearly all samples and stops being useful as a
 breakdown. The same reasoning applies to `jdk.SocketRead`/`SocketWrite`'s `host` and `address`:

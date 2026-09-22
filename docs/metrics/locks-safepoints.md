@@ -1,7 +1,7 @@
 # Locks & Safepoints (T9)
 
 Source pack: `agent/src/main/resources/mappings/locks-safepoints.yaml`.
-Test: `agent/src/test/java/io/jfr2grafana/agent/mappings/LocksSafepointsPackTest.java`.
+Test: `agent/src/test/java/io/jfrom/agent/mappings/LocksSafepointsPackTest.java`.
 
 This is the family JMX/Micrometer cannot show at all: no standard JVM MXBean reports how long a
 thread actually queued behind a contended monitor, how long a wait or park actually lasted, how

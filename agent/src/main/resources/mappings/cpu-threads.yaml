@@ -1,7 +1,7 @@
 # CPU & Threads mapping pack (T8).
 #
 # Covers jdk.CPULoad, jdk.JavaThreadStatistics and jdk.ThreadCPULoad, per the "Verified JFR
-# ground truth" table in docs/superpowers/specs/2026-09-21-jfr2grafana-design.md.
+# ground truth" table in docs/superpowers/specs/2026-09-21-jfrom-design.md.
 #
 # Namespace contract: every metric name below starts with jfr_cpu_ or jfr_thread_, one of the
 # three prefixes (jfr_cpu_, jfr_thread_, jfr_threads_) this pack owns, so it cannot collide with

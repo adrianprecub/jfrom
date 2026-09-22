@@ -1,11 +1,11 @@
-name: jfr2grafana
+name: jfrom
 
 services:
   sample-app:
     build:
       context: ..
       dockerfile: sample-app/Dockerfile
-    image: jfr2grafana-sample-app
+    image: jfrom-sample-app
     ports:
       - "8080:8080"
       - "9404:9404"

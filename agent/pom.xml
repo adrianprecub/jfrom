@@ -5,13 +5,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.jfr2grafana</groupId>
-    <artifactId>jfr2grafana-parent</artifactId>
+    <groupId>io.jfrom</groupId>
+    <artifactId>jfrom-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>jfr2grafana-agent</artifactId>
-  <name>jfr2grafana-agent</name>
+  <artifactId>jfrom-agent</artifactId>
+  <name>jfrom-agent</name>
   <description>Java agent that streams JFR events into Prometheus metrics</description>
 
   <dependencies>
@@ -25,7 +25,7 @@
   </dependencies>
 
   <build>
-    <finalName>jfr2grafana-agent</finalName>
+    <finalName>jfrom-agent</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -39,7 +39,7 @@
               <relocations>
                 <relocation>
                   <pattern>org.yaml.snakeyaml</pattern>
-                  <shadedPattern>io.jfr2grafana.agent.shaded.snakeyaml</shadedPattern>
+                  <shadedPattern>io.jfrom.agent.shaded.snakeyaml</shadedPattern>
                 </relocation>
               </relocations>
               <filters>
@@ -62,11 +62,11 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
-                    <Premain-Class>io.jfr2grafana.agent.Agent</Premain-Class>
-                    <Agent-Class>io.jfr2grafana.agent.Agent</Agent-Class>
+                    <Premain-Class>io.jfrom.agent.Agent</Premain-Class>
+                    <Agent-Class>io.jfrom.agent.Agent</Agent-Class>
                     <Can-Redefine-Classes>false</Can-Redefine-Classes>
                     <Can-Retransform-Classes>false</Can-Retransform-Classes>
-                    <Implementation-Title>jfr2grafana-agent</Implementation-Title>
+                    <Implementation-Title>jfrom-agent</Implementation-Title>
                     <Implementation-Version>${project.version}</Implementation-Version>
                   </manifestEntries>
                 </transformer>

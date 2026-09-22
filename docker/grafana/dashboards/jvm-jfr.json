@@ -1,9 +1,9 @@
 {
   "uid": "jvm-jfr",
   "title": "JVM via JFR",
-  "description": "Live JVM internals streamed from Java Flight Recorder via jfr2grafana-agent. One row per metric family; see panel descriptions for known platform caveats (macOS/aarch64 CPU ratios, sampled allocation estimate, contention-threshold gaps).",
+  "description": "Live JVM internals streamed from Java Flight Recorder via jfrom-agent. One row per metric family; see panel descriptions for known platform caveats (macOS/aarch64 CPU ratios, sampled allocation estimate, contention-threshold gaps).",
   "tags": [
-    "jfr2grafana",
+    "jfrom",
     "jvm",
     "jfr"
   ],
@@ -59,7 +59,7 @@
             "type": "prometheus",
             "uid": "vmetrics"
           },
-          "expr": "sum(rate(jfr2grafana_events_processed_total[$__rate_interval]))",
+          "expr": "sum(rate(jfrom_events_processed_total[$__rate_interval]))",
           "refId": "A",
           "legendFormat": "events/sec"
         }
@@ -85,7 +85,7 @@
         "graphMode": "area",
         "justifyMode": "auto"
       },
-      "description": "Rate of jfr2grafana_events_processed_total across all event types. Flat non-zero confirms the agent is alive and the RecordingStream is flowing."
+      "description": "Rate of jfrom_events_processed_total across all event types. Flat non-zero confirms the agent is alive and the RecordingStream is flowing."
     },
     {
       "id": 4,
@@ -107,7 +107,7 @@
             "type": "prometheus",
             "uid": "vmetrics"
           },
-          "expr": "jfr2grafana_scrape_duration_seconds",
+          "expr": "jfrom_scrape_duration_seconds",
           "refId": "A",
           "legendFormat": "scrape duration"
         }
@@ -155,7 +155,7 @@
             "type": "prometheus",
             "uid": "vmetrics"
           },
-          "expr": "sum(rate(jfr2grafana_events_dropped_total[$__rate_interval]))",
+          "expr": "sum(rate(jfrom_events_dropped_total[$__rate_interval]))",
           "refId": "A",
           "legendFormat": "events dropped/sec"
         }
@@ -203,7 +203,7 @@
             "type": "prometheus",
             "uid": "vmetrics"
           },
-          "expr": "sum(rate(jfr2grafana_cardinality_dropped_total[$__rate_interval]))",
+          "expr": "sum(rate(jfrom_cardinality_dropped_total[$__rate_interval]))",
           "refId": "A",
           "legendFormat": "cardinality drops/sec"
         }

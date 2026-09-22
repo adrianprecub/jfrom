@@ -3,7 +3,7 @@
 Produced by `agent/src/main/resources/mappings/memory-gc.yaml` from `jdk.GCHeapSummary`,
 `jdk.GarbageCollection`, `jdk.GCPhasePause`, `jdk.MetaspaceSummary` and
 `jdk.ObjectAllocationSample`. Verified field names against JDK 25.0.1 (`jfr metadata`); see
-`docs/superpowers/specs/2026-09-21-jfr2grafana-design.md`.
+`docs/superpowers/specs/2026-09-21-jfrom-design.md`.
 
 | Metric | Type | Unit | Labels | Source event | Meaning |
 |---|---|---|---|---|---|

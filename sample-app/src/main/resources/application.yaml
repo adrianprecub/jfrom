@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: jfr2grafana-sample-app
+    name: jfrom-sample-app
 
 # Settings for the workload endpoints and the always-on background driver
 # that keeps every JFR event family producing signal from startup.
@@ -22,4 +22,4 @@ sample:
 
 logging:
   level:
-    io.jfr2grafana.sample: INFO
+    io.jfrom.sample: INFO

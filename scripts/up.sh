@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-command entry point for the jfr2grafana docker-compose POC:
+# One-command entry point for the jfrom docker-compose POC:
 #   1. build the agent jar with Maven
 #   2. bring up sample-app + victoriametrics + grafana
 #   3. wait for the app to be healthy and probe the agent's /metrics
@@ -28,7 +28,7 @@ err() { printf 'ERROR: %s\n' "$*" >&2; }
 cd "$REPO_ROOT"
 
 # --- 1. build the agent jar --------------------------------------------
-log "Building jfr2grafana-agent.jar with Maven (agent module)"
+log "Building jfrom-agent.jar with Maven (agent module)"
 if ! mvn -q -B -pl agent -am -DskipTests package; then
   err "Maven build of the 'agent' module failed (see output above)."
   err "The sample-app image will still build and run, but with no metrics,"
@@ -37,9 +37,9 @@ if ! mvn -q -B -pl agent -am -DskipTests package; then
   exit 1
 fi
 
-AGENT_JAR="$REPO_ROOT/agent/target/jfr2grafana-agent.jar"
+AGENT_JAR="$REPO_ROOT/agent/target/jfrom-agent.jar"
 if [ -f "$AGENT_JAR" ]; then
-  log "agent jar ready: agent/target/jfr2grafana-agent.jar"
+  log "agent jar ready: agent/target/jfrom-agent.jar"
 else
   # Should not happen if mvn package succeeded, but don't silently proceed.
   err "mvn package succeeded but $AGENT_JAR is missing."
@@ -112,7 +112,7 @@ fi
 # --- 4. print URLs ---------------------------------------------------------
 cat <<EOF
 
-jfr2grafana stack is up:
+jfrom stack is up:
   Grafana         $GRAFANA_URL      (anonymous, lands on the home dashboard)
   VictoriaMetrics $VM_URL
   sample-app      $APP_URL

@@ -1,17 +1,17 @@
-# jfr2grafana sample-app image.
+# jfrom sample-app image.
 #
 # BUILD CONTEXT: this Dockerfile must be built from the REPO ROOT, not from
 # sample-app/, because it needs the root aggregator pom.xml (for the Maven
 # module/version metadata) and, optionally, the sibling agent/target jar
 # produced by the agent module.
 #
-#   docker build -f sample-app/Dockerfile -t jfr2grafana-sample-app .
+#   docker build -f sample-app/Dockerfile -t jfrom-sample-app .
 #
-# A JRE-only runtime image will NOT work here: JFR and the jfr2grafana agent
+# A JRE-only runtime image will NOT work here: JFR and the jfrom agent
 # both need the full JDK (jcmd/JFR support, Instrumentation), so both stages
 # use a full JDK, not a JRE.
 #
-# The agent jar (agent/target/jfr2grafana-agent.jar, built by the separate
+# The agent jar (agent/target/jfrom-agent.jar, built by the separate
 # `agent` module) is optional at build time: if it isn't there yet - e.g.
 # because the agent module hasn't been built, or its premain class doesn't
 # exist yet - the image still builds, and the container still starts the
@@ -41,11 +41,11 @@ RUN --mount=type=cache,target=/root/.m2 \
 # image layer, so we can shell-test for the sibling jar's existence.
 RUN --mount=type=bind,source=.,target=/build-context,ro \
     mkdir -p /workspace/agent-lib && \
-    if [ -f /build-context/agent/target/jfr2grafana-agent.jar ]; then \
-      cp /build-context/agent/target/jfr2grafana-agent.jar /workspace/agent-lib/jfr2grafana-agent.jar; \
-      echo "Bundled agent/target/jfr2grafana-agent.jar into the image"; \
+    if [ -f /build-context/agent/target/jfrom-agent.jar ]; then \
+      cp /build-context/agent/target/jfrom-agent.jar /workspace/agent-lib/jfrom-agent.jar; \
+      echo "Bundled agent/target/jfrom-agent.jar into the image"; \
     else \
-      echo "No agent/target/jfr2grafana-agent.jar found at build time - image will run without a bundled agent"; \
+      echo "No agent/target/jfrom-agent.jar found at build time - image will run without a bundled agent"; \
     fi
 
 FROM ${RUNTIME_IMAGE} AS runtime
@@ -54,7 +54,7 @@ WORKDIR /app
 # Configurable agent path/options - override with `docker build --build-arg`
 # or `docker run -e` / compose `environment:`.
 ARG AGENT_OPTS=port=9404
-ARG AGENT_JAR=/app/agent/jfr2grafana-agent.jar
+ARG AGENT_JAR=/app/agent/jfrom-agent.jar
 ENV AGENT_OPTS=${AGENT_OPTS} \
     AGENT_JAR=${AGENT_JAR} \
     APP_JAR=/app/sample-app.jar \

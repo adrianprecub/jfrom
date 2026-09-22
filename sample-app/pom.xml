@@ -5,13 +5,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>io.jfr2grafana</groupId>
-    <artifactId>jfr2grafana-parent</artifactId>
+    <groupId>io.jfrom</groupId>
+    <artifactId>jfrom-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>jfr2grafana-sample-app</artifactId>
-  <name>jfr2grafana-sample-app</name>
+  <artifactId>jfrom-sample-app</artifactId>
+  <name>jfrom-sample-app</name>
   <description>Spring Boot app that deliberately misbehaves so JFR has something to report</description>
 
 

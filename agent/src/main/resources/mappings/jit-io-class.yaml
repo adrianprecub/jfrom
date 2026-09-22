@@ -5,7 +5,7 @@
 # inventory and the reasoning behind each counter/counter_absolute/histogram choice.
 #
 # Ground truth for every field name/type below was verified against JDK 25.0.1 via
-# `jfr metadata` (see docs/superpowers/specs/2026-09-21-jfr2grafana-design.md).
+# `jfr metadata` (see docs/superpowers/specs/2026-09-21-jfrom-design.md).
 
 rules:
   # ------------------------------------------------------------------

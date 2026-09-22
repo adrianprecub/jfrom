@@ -3,7 +3,7 @@
 # Covers: jdk.GCHeapSummary, jdk.GarbageCollection, jdk.GCPhasePause,
 # jdk.MetaspaceSummary, jdk.ObjectAllocationSample.
 #
-# Verified against JDK 25.0.1 (`jfr metadata`) - see docs/superpowers/specs/2026-09-21-jfr2grafana-design.md
+# Verified against JDK 25.0.1 (`jfr metadata`) - see docs/superpowers/specs/2026-09-21-jfrom-design.md
 # "Verified JFR ground truth" table. Field names below are not guessed.
 #
 # Naming: every metric starts with jfr_heap_, jfr_gc_, jfr_metaspace_ or jfr_allocation_ -

@@ -62,7 +62,7 @@ with a `percentunit` (0..1) unit, not `percent` (0..100).
    attach listener, etc.) in normal POC operation, while guaranteeing the registry never grows
    an unbounded number of series just from thread churn. Once the cap is hit, further distinct
    thread names collapse into the shared `thread="__other__"` series (and increment
-   `jfr2grafana_cardinality_dropped_total{metric="jfr_thread_cpu_user_ratio"}` /
+   `jfrom_cardinality_dropped_total{metric="jfr_thread_cpu_user_ratio"}` /
    `...system_ratio`) instead of being dropped silently.
 
 ## Departures from the suggested coverage
@@ -86,7 +86,7 @@ with a `percentunit` (0..1) unit, not `percent` (0..100).
 
 ## Test coverage
 
-`agent/src/test/java/io/jfr2grafana/agent/mappings/CpuThreadsPackTest.java`:
+`agent/src/test/java/io/jfrom/agent/mappings/CpuThreadsPackTest.java`:
 
 1. Loads the pack from the classpath and asserts the 3 rules, 9 metrics, their types
    (including the `counter_absolute` trap and the per-thread `maxCardinality: 20` trap) and

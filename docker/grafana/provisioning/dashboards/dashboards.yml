@@ -13,7 +13,7 @@
 apiVersion: 1
 
 providers:
-  - name: jfr2grafana
+  - name: jfrom
     orgId: 1
     folder: ""
     type: file

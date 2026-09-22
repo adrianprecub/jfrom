@@ -1,13 +1,14 @@
-# jfr2grafana
+# jfrom
 
-Live-stream JVM internals from Java Flight Recorder into Grafana, as Prometheus metrics.
+**jfrom** — *JFR observability metrics*. Live-stream JVM internals from Java Flight Recorder
+(JFR) into Grafana, as Prometheus metrics.
 
 JMX and Micrometer expose a shallow, fixed set of numbers. JFR sees what the VM is actually
 doing — GC phases, safepoints, lock contention, JIT compilation, allocation — at very low
 overhead. Since JDK 14, `jdk.jfr.consumer.RecordingStream` delivers those events to an
 in-process callback about once a second, with no `.jfr` file on disk.
 
-`jfr2grafana` is a Java agent that consumes that stream and serves the result at `/metrics`.
+`jfrom` is a Java agent that consumes that stream and serves the result at `/metrics`.
 Which events become which metrics is **declarative** — adding a metric is a few lines of YAML,
 not a code change.
 
@@ -45,7 +46,7 @@ Tear down with `./scripts/down.sh` (add `--volumes` to drop Grafana's state too)
 ## Using the agent on your own application
 
 ```bash
-java -javaagent:/path/to/jfr2grafana-agent.jar=port=9404 -jar your-app.jar
+java -javaagent:/path/to/jfrom-agent.jar=port=9404 -jar your-app.jar
 ```
 
 | Option | Default | Meaning |
@@ -62,9 +63,9 @@ The agent is built to be safe to attach to anything:
   the app starts normally. Verified against a missing config file and an already-bound port —
   the host process still exits 0.
 - **It cannot collide with your dependencies.** The only runtime dependency is SnakeYAML, and
-  it is shaded into `io.jfr2grafana.agent.shaded`. A `-javaagent` loads on the *system*
+  it is shaded into `io.jfrom.agent.shaded`. A `-javaagent` loads on the *system*
   classloader, so anything it shipped unrelocated could shadow your own classes.
-  `scripts/verify-shading.sh` fails the build if any class escapes `io/jfr2grafana/`.
+  `scripts/verify-shading.sh` fails the build if any class escapes `io/jfrom/`.
 - **It will not keep your JVM alive.** Both the JFR stream thread and the HTTP server's
   internal dispatcher are daemon threads.
 
@@ -108,9 +109,9 @@ to add more without rebuilding.
 - [Locks & safepoints](docs/metrics/locks-safepoints.md)
 - [JIT, class loading, I/O, exceptions](docs/metrics/jit-io-class.md)
 
-The agent also reports on itself: `jfr2grafana_events_processed_total`,
-`jfr2grafana_events_dropped_total`, `jfr2grafana_cardinality_dropped_total` and
-`jfr2grafana_scrape_duration_seconds` — so you can tell "the JVM is quiet" from
+The agent also reports on itself: `jfrom_events_processed_total`,
+`jfrom_events_dropped_total`, `jfrom_cardinality_dropped_total` and
+`jfrom_scrape_duration_seconds` — so you can tell "the JVM is quiet" from
 "our mapping is broken".
 
 ## Gotchas worth knowing
@@ -153,12 +154,12 @@ apply an edit. Two things to keep in mind when hand-editing:
 ```bash
 mvn verify                       # 168 tests, plus the shading guard
 mvn -q -pl agent package         # just the agent jar
-./scripts/verify-shading.sh      # assert nothing ships outside io/jfr2grafana/
+./scripts/verify-shading.sh      # assert nothing ships outside io/jfrom/
 ```
 
 Tests run against a committed 145 KB JFR recording
 (`agent/src/test/resources/fixtures/sample.jfr`, 350 events across 21 event types), so they are
-fast and deterministic. Regenerate it with `io.jfr2grafana.agent.event.GenerateFixture`.
+fast and deterministic. Regenerate it with `io.jfrom.agent.event.GenerateFixture`.
 
 Metric output is validated against Prometheus' own linter:
 

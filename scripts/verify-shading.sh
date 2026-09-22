@@ -7,24 +7,24 @@
 # monitoring problem. This is the single most important safety property of the artifact.
 set -euo pipefail
 
-JAR="${1:-agent/target/jfr2grafana-agent.jar}"
+JAR="${1:-agent/target/jfrom-agent.jar}"
 [[ -f "$JAR" ]] || { echo "verify-shading: no jar at $JAR" >&2; exit 1; }
 
 entries=$(unzip -Z1 "$JAR")
 
-# Every shipped class must live under io/jfr2grafana/ (ours, or relocated deps).
-leaked=$(grep '\.class$' <<<"$entries" | grep -v '^io/jfr2grafana/' || true)
+# Every shipped class must live under io/jfrom/ (ours, or relocated deps).
+leaked=$(grep '\.class$' <<<"$entries" | grep -v '^io/jfrom/' || true)
 if [[ -n "$leaked" ]]; then
-    echo "verify-shading: FAIL - classes outside io/jfr2grafana/:" >&2
+    echo "verify-shading: FAIL - classes outside io/jfrom/:" >&2
     sed 's/^/  /' <<<"$leaked" >&2
     exit 1
 fi
 
 # The relocation must actually have happened, rather than the dependency vanishing.
-count=$(grep -c '^io/jfr2grafana/agent/shaded/snakeyaml/.*\.class$' <<<"$entries" || true)
+count=$(grep -c '^io/jfrom/agent/shaded/snakeyaml/.*\.class$' <<<"$entries" || true)
 if (( count < 50 )); then
     echo "verify-shading: FAIL - only $count relocated snakeyaml classes; relocation likely broke" >&2
     exit 1
 fi
 
-echo "verify-shading: OK - $(grep -c '\.class$' <<<"$entries") classes, all under io/jfr2grafana/ ($count relocated)"
+echo "verify-shading: OK - $(grep -c '\.class$' <<<"$entries") classes, all under io/jfrom/ ($count relocated)"
